@@ -1,0 +1,11 @@
+* cl-minify-css Test
+
+** How to test cl-minify-css?
+
+It's quite simple, in REPL:
+
+#+BEGIN_SRC lisp
+(asdf:test-system :cl-minify-css)
+#+END_SRC
+
+If "T" is returned in Test result because it passed, if "nil" is returned because it failed.

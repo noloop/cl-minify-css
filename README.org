@@ -1,0 +1,38 @@
+* cl-minify-css
+
+*** _To minify css with common lisp._
+
+** Getting Started in cl-minify-css
+
+*** Portability
+
+*** Dependencies
+
+*** Download and Load
+
+    **1 - Load cl-minify-css system by quicklisp**
+
+IN PROGRESS... but will be like this: ~(ql:quickload :cl-minify-css)~
+
+**2 - Download and load cl-minify-css system by github and asdf**
+
+download from github:
+
+#+BEGIN_SRC
+git clone https://github.com/noloop/cl-minify-css.git
+#+END_SRC
+
+and load by asdf:
+
+#+BEGIN_SRC lisp 
+(asdf:load-system :cl-minify-css)
+#+END_SRC
+
+**Note: Remember to configure asdf to find your directory where you downloaded the libraries (asdf call them "systems") above, if you do not know how to make a read at: https://common-lisp.net/project/asdf/asdf/Configuring-ASDF-to-find-your-systems.html or https://lisp-lang.org/learn/writing-libraries.**_
+
+** Topics...
+
+** API
+
+function **(minify-css css &key keep-license-p)**
+
