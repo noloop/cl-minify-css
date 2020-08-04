@@ -3,7 +3,7 @@
   :author "noloop <noloop@zoho.com>"
   :maintainer "noloop <noloop@zoho.com>"
   :license "GPLv3"
-  :version "0.1.0"
+  :version "1.0.0"
   :homepage "https://github.com/noloop/cl-minify-css"
   :bug-tracker "https://github.com/noloop/cl-minify-css/issues"
   :source-control (:git "git@github.com:noloop/cl-minify-css.git")

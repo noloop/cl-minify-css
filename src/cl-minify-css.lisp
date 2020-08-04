@@ -1,16 +1,21 @@
 (in-package #:noloop.cl-minify-css)
 
 (defun trim (s)
+  "It returns a string without all spaces, newlines and tabs in its extremes, this functions doesn't make nothing about the middle of the string. Example: 
+(string-trim \"   hi, I'm here!  \") => \"hi, I'm here!\""
   (string-trim '(#\Space #\Tab #\Newline) s))
 
 (defun remove-spaces-newlines-tabs (s)
+  "It returns a string without all spaces, newlines and tabs for given string. Example: 
+(remove-spaces-newlines-tabs \"   hi, I'm here!  \") => \"hi,I'mhere!\""
   (remove #\Space
 	  (remove #\Newline
 		  (remove #\Tab
 			  s))))
 
 (defun make-string-from-chars (char-list)
-  "(make-string-from-chars '(#\s #\o #\m #\e)) => \"some\""
+  "It returns a string for given char list. Example:
+(make-string-from-chars '(#\s #\o #\m #\e)) => \"some\""
   (let ((s (make-array 0
 		       :element-type 'character
 		       :fill-pointer 0
@@ -20,25 +25,25 @@
     s))
 
 (defun properties-without-spaces (s)
-  "(properties-without-spaces \"margin: .67em 0;
+  "It returns a string without spaces, newlines and tabs in the properties for given css. Example: 
+(properties-without-spaces \"margin: .67em 0;
     padding: 5px; \") => \"margin:.67em 0;padding:5px;\""
   (let ((char-list nil)
 	(char-remove-p nil))
-    (dolist (c (loop for char across s
-		  collect char))
+    (loop for c across s do
       (when (or (char-equal c #\:)
-		(char-equal c #\;))
-	(push c char-list)
-	(setf char-remove-p t))
+    		(char-equal c #\;))
+    	(push c char-list)
+    	(setf char-remove-p t))
       (when (and char-remove-p
-		 (not (or (char-equal c #\:)
-			  (char-equal c #\;)))
-		 (not (or (char-equal c #\Space)
-			  (char-equal c #\Newline)
-			  (char-equal c #\Tab))))
-	(setf char-remove-p nil))
+    		 (not (or (char-equal c #\:)
+    			  (char-equal c #\;)))
+    		 (not (or (char-equal c #\Space)
+    			  (char-equal c #\Newline)
+    			  (char-equal c #\Tab))))
+    	(setf char-remove-p nil))
       (unless char-remove-p
-	(push c char-list)))
+    	(push c char-list)))
     (trim (make-string-from-chars (reverse char-list)))))
 
 (defun remove-css-comments-recursive (css &key (start-search 0) keep-license-p)
@@ -81,29 +86,90 @@
 	      (remove-css-comments-recursive css-without-comment
 					     :keep-license-p keep-license-p)))))
 
+(defun class-name-without-spaces (s)
+  "It returns a string without spaces, newlines and tabs for a given css class name. Example: 
+(class-name-without-spaces \"div p,
+  div p + p, h1,
+   #myid \") => \"div p,div p+p,h1,#myid\""
+  (flet ((without-spaces (s)
+	   (let ((char-list nil)
+  		 (char-remove-p nil))
+	     (loop for c across s do
+  		  (when (or (char-equal c #\,)
+  			    (char-equal c #\+)
+  			    (char-equal c #\>)
+  			    (char-equal c #\<)
+  			    (char-equal c #\~)
+			    (char-equal c #\/))
+  		    (push c char-list)
+  		    (setf char-remove-p t))
+  		  (when (and char-remove-p
+  			     (not (or (char-equal c #\,)
+  				      (char-equal c #\+)
+  				      (char-equal c #\>)
+  				      (char-equal c #\<)
+  				      (char-equal c #\~)
+				      (char-equal c #\/)))
+  			     (not (or (char-equal c #\Space)
+  				      (char-equal c #\Newline)
+  				      (char-equal c #\Tab))))
+  		    (setf char-remove-p nil))
+  		  (unless char-remove-p
+  		    (push c char-list)))
+	     (trim (make-string-from-chars (reverse char-list))))))
+    (if (or (search "+" s)
+	    (search ">" s)
+	    (search "<" s)
+	    (search "~" s))
+	(reverse (without-spaces (reverse (without-spaces s))))
+	(without-spaces s))))
+
 (defun minify-css-class (css &key keep-license-p)
-  "(minify-css \".myclass { margin: .67em 0; /* some comment */
+  "It returns the minified class string for a given css class string. If :keep-license-p t the comments that have \"license\" (non-case-sensitive) are kept. Example: 
+(minify-css \".myclass { margin: .67em 0; /* some comment */
     padding: 5px; } \") => \".myclass{margin:.67em 0;padding:5px;}\" "
   (let* ((class-name
-	  (remove-css-comments-recursive
-	   (remove-spaces-newlines-tabs (trim (subseq css
-						      0
-						      (search "{" css))))
-	   :keep-license-p keep-license-p))
+	  (trim
+	   (remove-css-comments-recursive
+	    (class-name-without-spaces (trim (subseq css
+						     0
+						     (search "{" css))))
+	    :keep-license-p keep-license-p)))
 	 (class-value
-	  (remove-css-comments-recursive
-	   (trim (subseq css
-			 (+ (search "{" css) 1)
-			 (- (length css) 2)))
-	   :keep-license-p keep-license-p)))
+	  (trim
+	   (remove-css-comments-recursive
+	    (subseq css
+		    (+ (search "{" css) 1)
+		    (- (length css) 2))
+	    :keep-license-p keep-license-p))))
     (format nil "~a{~a}"
 	    class-name
 	    (properties-without-spaces class-value))))
 
 (defun end-bracket-index (css start-bracket)
-  (let (())))
-
+  "It returns the closing bracket index (here called end-bracket) of a given onpening bracket index (here called start-bracket) of one string (here called css)."
+  (let ((open-bracket-level 1)
+	(end-bracket 0)
+	(css-before-start-bracket (subseq css 0 (+ start-bracket 1)))
+	(css-after-start-bracket (subseq css (+ start-bracket 1))))
+    (loop for c across css-after-start-bracket do
+	 (cond ((char-equal c #\{)
+		(incf open-bracket-level))
+	       ((char-equal c #\})
+		(decf open-bracket-level)))
+	 (when (zerop open-bracket-level)
+	   (return-from end-bracket-index
+	     (+ end-bracket
+		(length css-before-start-bracket))))
+	 (incf end-bracket))))
+    
 (defun split-css-in-classes (css &optional classes)
+  "It returns a list with splited classes strings of a given css string. If the css has media-queries instead of a string is returned a list where the first is the media query, and the rest is the string classes. Example: 
+(split-css-in-classes \"body{color:red;}@media (min-width:30em){body{color:green;}div{font-size:1em;}}\") 
+=> (\"body{color:red;}\"
+    (\"@media (min-width:30em)\"
+     (\"body{color:green;}\"
+      \"div{font-size:1em;}\")))"
   (let ((start-bracket
 	 (search "{" css))
 	(end-bracket
@@ -117,7 +183,7 @@
       (if media-query-p
 	  (let* ((css-between-media-query
 		  (subseq css
-			  start-bracket
+			  (+ start-bracket 1)
 			  (end-bracket-index css start-bracket)))
 		 (media-query-classes
 		  (split-css-in-classes css-between-media-query))
@@ -142,40 +208,18 @@
 (defun minify-css (css &key keep-license-p)
   "It minify a css code removing spaces, newlines, tabs, comments. If want keep the license comment use :keep-license-p t."
   (reduce (lambda (acc curr)
-	    (format nil "~a~a" curr acc))
+	    (format nil "~a~a" acc curr))
 	  (split-css-in-classes css)
 	  :key (lambda (class)
-		 (minify-css-class class
-				   :keep-license-p keep-license-p))))
+		 (if (atom class)
+		     (minify-css-class class
+				       :keep-license-p keep-license-p)
+		     (format nil "~a{~a}"
+			     (properties-without-spaces (first class))
+			     (reduce (lambda (acc curr)
+				       (format nil "~a~a" acc curr))
+				     (second class)
+				     :key (lambda (class)
+					    (minify-css-class class
+							      :keep-license-p keep-license-p))))))))
 
-;; body {
-;;   font: 1em/150% Helvetica, Arial, sans-serif;
-;;   padding: 1em;
-;;   margin: 0 auto;
-;;   max-width: 33em;
-;; }
-
-;; @media (min-width: 70em) {
-;;   body {
-;;     font-size: 130%;
-;;   }
-;; }
-
-;; h1 {
-;;   font-size: 1.5em;
-;; }
-
-;; div p,
-;; #id:first-line {
-;;   background-color: red;
-;;   border-radius: 3px;
-;; }
-
-;; div p {
-;;   margin: 0;
-;;   padding: 1em;
-;; }
-
-;; div p + p {
-;;   padding-top: 0;
-;; }
